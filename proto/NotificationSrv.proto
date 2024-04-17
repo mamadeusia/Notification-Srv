@@ -1,0 +1,245 @@
+syntax = "proto3";
+import "google/protobuf/timestamp.proto";
+
+package NotificationSrv;
+
+option go_package = "./proto;NotificationSrv";
+
+service NotificationSrv {
+
+	rpc CreateRequesterNotification(CreateRequesterNotificationRequest) returns (CreateRequesterNotificationResponse) {} // call with requestSrv
+	rpc CreateValidatorNotification(CreateValidatorNotificationRequest) returns (CreateValidatorNotificationResponse) {} // call with requestSrv
+	rpc CreateBulkValidatorNotification(CreateBulkValidatorNotificationRequest) returns (CreateBulkValidatorNotificationResponse) {} // call with request
+	rpc GetRequesterNotifications(GetRequesterNotificationsRequest) returns (GetRequesterNotificationsResponse) {}
+	rpc GetValidatorNotifications(GetValidatorNotificationsRequest) returns (GetValidatorNotificationsResponse) {}
+	rpc GetRequesterUnreadNotificationsCount(GetRequesterUnreadNotificationsCountRequest) returns (GetRequesterUnreadNotificationsCountResponse) {}
+	rpc GetValidatorUnreadNotificationsCount(GetValidatorUnreadNotificationsCountRequest) returns (GetValidatorUnreadNotificationsCountResponse) {}
+	rpc MarkNotificationStatusAsRead(MarkNotificationStatusAsReadRequest) returns (MarkNotificationStatusAsReadResponse) {}
+
+	
+}
+
+service QuestionSrv{
+
+	rpc CreateBulkValidatorQuestions(CreateBulkValidatorQuestionsRequest) returns (CreateBulkValidatorQuestionsResponse) {}
+
+	rpc SetValidatorQuestionAnswer(SetValidatorQuestionAnswerRequest) returns (SetValidatorQuestionAnswerResponse) {}
+
+	// rpc GetSelectedValidators(GetSelectedValidatorsRequest) returns (GetSelectedValidatorsResponse) {}
+	// we should call request service to set corresponding validators for a request 
+
+	rpc GetQuestionExamByID(GetQuestionExamByIDRequest) returns (GetQuestionExamByIDResponse) {}
+}
+
+
+message StoredNotification {
+	int64 chatID = 1 ; 
+	int32 messageID = 2 ; 
+}
+enum NotificationStatus {
+	Read = 0;
+	UnRead = 1;
+}
+// Requester Message Types 
+message AdminAskQuestionDetails{
+	string requestID = 1;
+	string question = 2;
+}
+message RequestRejectedDetails{
+	string reason =1 ;
+	google.protobuf.Timestamp time = 2;
+
+}
+message RequestApprovedDetails{
+    google.protobuf.Timestamp time = 1;
+}
+// it should not call unless we create a new service of questions
+message ValidatorQuestionsDetails {
+	repeated string validatorQuestionIDs  =1 ;  
+}
+
+message CreateRequesterNotificationRequest {
+	int64 from = 1 ; 
+	int64 to = 2 ;
+
+	oneof message_oneof {
+		AdminAskQuestionDetails adminAskQuestionDetails = 3;
+		RequestRejectedDetails requestRejectedDetails = 4;
+		RequestApprovedDetails requestApprovedDetails = 5;
+		ValidatorQuestionsDetails validatorQuestionsDetails = 6;
+	}
+
+}
+
+message CreateRequesterNotificationResponse {
+	string msg = 1;
+}
+
+message CreateBulkValidatorNotificationResponse {
+	repeated string msgs = 1;
+
+}
+
+// Validator Message Types
+message NearRequestFoundDetails{
+	string requestID = 1;
+	string FullName = 2; 
+}
+
+message ElectedAsValidatorDetails {
+	string RequesterFullName = 1 ; 
+}
+
+message RequesterRespondToValidatorDetails {
+	string requestID = 1;
+	repeated StoredNotification StoredNotifications = 2;
+}
+
+message CreateValidatorNotificationRequest {
+	int64 from = 1 ; 
+	int64 to = 2 ; 
+	oneof message_oneof {
+		NearRequestFoundDetails nearRequestFoundDetails = 3;
+		ElectedAsValidatorDetails electedAsValidatorDetails = 4;
+		RequesterRespondToValidatorDetails requesterRespondToValidatorDetails = 5;
+	}
+}
+message CreateBulkValidatorNotificationRequest{
+	repeated CreateValidatorNotificationRequest createValidatorNotificationRequest = 1;
+}
+message CreateValidatorNotificationResponse {
+	string msg = 1;
+}
+// Notification Types . usefull when we want to get messages from notification service
+message Notification {
+	string id = 1 ;
+	int64 from = 2 ; 
+	int64 to = 3 ; 
+	NotificationStatus status = 4;
+	oneof message_oneof{
+		AdminAskQuestionDetails adminAskQuestionDetails = 5;
+		RequestRejectedDetails requestRejectedDetails = 6;
+		RequestApprovedDetails requestApprovedDetails = 7;
+		ValidatorQuestionsDetails validatorQuestionsDetails = 8;
+
+		NearRequestFoundDetails nearRequestFoundDetails = 9;
+		ElectedAsValidatorDetails electedAsValidatorDetails = 10;
+		RequesterRespondToValidatorDetails requesterRespondToValidatorDetails = 11;
+
+	}
+}
+
+
+message GetRequesterNotificationsRequest {
+	int64 to  = 1;
+	int64 limit = 2;
+	int64 offset = 3;
+}
+message	GetRequesterNotificationsResponse{
+	repeated Notification notifications = 1;
+}
+
+
+
+
+message GetValidatorNotificationsRequest{
+	int64 to = 1;
+	int64 limit = 2;
+	int64 offset = 3;
+}
+
+message GetValidatorNotificationsResponse{
+	repeated Notification notifications = 1;
+}
+
+///
+message GetRequesterUnreadNotificationsCountRequest {
+	int64 to = 1;
+}
+
+message GetRequesterUnreadNotificationsCountResponse {
+	int64 count = 1;
+}
+
+message GetValidatorUnreadNotificationsCountRequest{
+	int64 to = 1;
+}
+
+message GetValidatorUnreadNotificationsCountResponse {
+	int64 count = 1;
+}
+////////////////////////////////
+
+message MarkNotificationStatusAsReadRequest {
+	string id = 1; 
+}
+
+message MarkNotificationStatusAsReadResponse {
+	string msg = 1;
+}	
+////
+////////////////////////////////////////////////////////////////////////////////
+
+message DescriptiveQuestionExamDetails {
+	string question = 1 ;
+} 
+
+message MultipleChoiceQuestionExamDetails {
+	string question = 1 ;
+	repeated string choices = 2 ;
+}
+
+message DescriptiveQuestionAnswerDetails {
+	string answer = 1 ;
+} 
+
+message MultipleChoiceQuestionAnswerDetails {
+	int32 index = 1 ; 
+}
+
+message CreateValidatorQuestionRequest {
+	string requestID = 1 ;
+	int64 validatorID = 2 ; 
+	int64 requesterID = 3 ; 
+
+	oneof message_oneof {
+		DescriptiveQuestionExamDetails descriptiveQuestionExamDetails = 4;
+		MultipleChoiceQuestionExamDetails multipleChoiceQuestionExamDetails = 5;
+	}
+}
+message CreateBulkValidatorQuestionsRequest {
+	repeated CreateValidatorQuestionRequest questions = 1 ; 
+}
+
+message CreateBulkValidatorQuestionsResponse {}
+
+
+///
+message SetValidatorQuestionAnswerRequest {
+
+	string questionID = 1 ; 
+	oneof message_oneof{
+		DescriptiveQuestionAnswerDetails descriptiveQuestionAnswerDetails = 2;
+		MultipleChoiceQuestionAnswerDetails multipleChoiceQuestionAnswerDetails = 3;
+	}
+}
+
+message SetValidatorQuestionAnswerResponse {
+	string msg = 1;
+}
+
+
+message GetQuestionExamByIDRequest{
+	string id = 1;
+}
+// we have to hide validatorID for requesterBot
+message GetQuestionExamByIDResponse {
+	string questionID = 1 ; 
+	string requestID = 2 ;
+	int64 requesterID = 3 ; 
+
+	oneof message_oneof {
+		DescriptiveQuestionExamDetails descriptiveQuestionExamDetails = 4;
+		MultipleChoiceQuestionExamDetails multipleChoiceQuestionExamDetails = 5;
+	}
+}
